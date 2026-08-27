@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Plugin.Maui.FileVault.Sample.MainPage"
+             Title="FileVault">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="12">
+            <Label Text="Plugin.Maui.FileVault" FontSize="22" FontAttributes="Bold" />
+            <Label Text="Encrypt, expire, lock, and purge local files on iOS and Android."
+                   TextColor="Gray" />
+
+            <Entry x:Name="PathEntry" Placeholder="Logical path (notes/secret.txt)" Text="notes/secret.txt" />
+            <Editor x:Name="ContentEditor" Placeholder="Plaintext to encrypt" HeightRequest="90"
+                    AutoSize="TextChanges" Text="This stays encrypted on disk." />
+            <Entry x:Name="PassphraseEntry" Placeholder="Optional passphrase" IsPassword="True" />
+
+            <Button Text="Write encrypted file" Clicked="OnWriteClicked" />
+            <Button Text="Read file" Clicked="OnReadClicked" />
+            <Button Text="Expire in 10 seconds" Clicked="OnExpireClicked" />
+            <Button Text="List vault" Clicked="OnListClicked" />
+            <Button Text="Purge expired" Clicked="OnPurgeClicked" />
+            <Button Text="Lock / unlock" Clicked="OnLockUnlockClicked" />
+            <Button Text="Destroy vault" Clicked="OnDestroyClicked" BackgroundColor="#B00020" />
+
+            <Label x:Name="StatusLabel" Text="Ready." FontSize="13" LineBreakMode="WordWrap" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
