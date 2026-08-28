@@ -1,5 +1,7 @@
 # Plugin.Maui.FileVault
 
+[![NuGet](https://img.shields.io/nuget/v/Plugin.Maui.FileVault.svg?label=NuGet)](https://www.nuget.org/packages/Plugin.Maui.FileVault)
+
 Secure local files for **.NET MAUI** on **iOS** and **Android**.
 
 The package stores app-private files as AES-256-GCM ciphertext, keeps the master key in the platform secure store, and manages the file lifecycle (expire, purge, lock, destroy).
@@ -13,6 +15,8 @@ The package stores app-private files as AES-256-GCM ciphertext, keeps the master
 | **Lifecycle** | TTL, idle timeout, purge on resume, lock on background, secure delete, quota eviction |
 
 ## Install
+
+Package: [https://www.nuget.org/packages/Plugin.Maui.FileVault](https://www.nuget.org/packages/Plugin.Maui.FileVault)
 
 ```bash
 dotnet add package Plugin.Maui.FileVault
