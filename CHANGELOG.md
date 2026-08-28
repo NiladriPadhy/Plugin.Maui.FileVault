@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Include the Buy Me a Coffee support section in the package README
+
 ## 1.0.0
 
 - AES-256-GCM encryption for vault files on iOS and Android
