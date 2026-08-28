@@ -18,9 +18,9 @@
     <PackageId>Plugin.Maui.FileVault</PackageId>
     <Title>.NET MAUI FileVault — encrypted local files</Title>
     <Description>Secure local files for .NET MAUI on iOS and Android: AES-256-GCM encryption, platform-protected keys, expiration, purge, lock/unlock, and vault lifecycle management.</Description>
-    <PackageTags>dotnet-maui;maui;maui-plugin;maui-utilities;cross-platform;android;ios;nuget;nugetworld;file;vault;encryption;aes;secure-storage;keystore;keychain;lifecycle</PackageTags>
+    <PackageTags>dotnet-maui;maui;maui-plugin;maui-utilities;cross-platform;android;ios;nuget;mauiessentials;file;vault;encryption;aes;secure-storage;keystore;keychain;lifecycle</PackageTags>
     <Authors>Niladri</Authors>
-    <Company>NugetWorld</Company>
+    <Company>MauiEssentials</Company>
     <Copyright>Copyright © 2026 Niladri</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
