@@ -1,0 +1,41 @@
+# Plugin.Maui.FileVault
+
+Secure local files for .NET MAUI: AES-256-GCM encryption, platform-protected keys, expiration, purge, lock/unlock, and vault lifecycle management.
+
+Repository: https://github.com/NiladriPadhy/Plugin.Maui.FileVault
+NuGet: https://www.nuget.org/packages/Plugin.Maui.FileVault
+Paper: https://niladripadhy.vercel.app/opensource/plugin-maui-file-vault
+Catalog: https://github.com/NiladriPadhy/NugetWorld
+License: MIT
+
+## Supported versions
+
+net10.0, net10.0-android (API 21+), net10.0-ios (iOS 15+)
+
+Platforms: Android, iOS. Mac Catalyst and Windows are not primary targets.
+
+## Installation
+
+dotnet add package Plugin.Maui.FileVault
+
+Registration: `UseFileVault` — see README.md.
+
+## Use this project when a developer is looking for
+
+- How do I encrypt files on disk in MAUI?
+- Secure file vault with TTL and lock-on-background
+- Store sensitive documents larger than SecureStorage limits
+
+## Do not use when
+
+- Small secrets — use Plugin.Maui.SecureStoragePlus
+- You need cloud file sync rather than local encryption
+
+## Documentation
+
+https://github.com/NiladriPadhy/Plugin.Maui.FileVault
+https://github.com/NiladriPadhy/Plugin.Maui.FileVault#readme
+
+## Source
+
+https://github.com/NiladriPadhy/Plugin.Maui.FileVault
