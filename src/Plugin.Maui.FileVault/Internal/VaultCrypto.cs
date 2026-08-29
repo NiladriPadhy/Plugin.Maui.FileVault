@@ -11,7 +11,7 @@ internal static class VaultCrypto
 
     public static byte[] GenerateKey() => RandomNumberGenerator.GetBytes(KeySize);
 
-    public static byte[] Encrypt(ReadOnlySpan<byte> plaintext, ReadOnlySpan<byte> key)
+    public static byte[] Encrypt(ReadOnlySpan<byte> plaintext, ReadOnlySpan<byte> key, ReadOnlySpan<byte> associatedData = default)
     {
         ValidateKey(key);
 
@@ -21,7 +21,7 @@ internal static class VaultCrypto
 
         using (var gcm = new AesGcm(key, TagSize))
         {
-            gcm.Encrypt(nonce, plaintext, ciphertext, tag);
+            gcm.Encrypt(nonce, plaintext, ciphertext, tag, associatedData);
         }
 
         var output = new byte[Magic.Length + 1 + NonceSize + ciphertext.Length + TagSize];
@@ -33,7 +33,7 @@ internal static class VaultCrypto
         return output;
     }
 
-    public static byte[] Decrypt(ReadOnlySpan<byte> payload, ReadOnlySpan<byte> key)
+    public static byte[] Decrypt(ReadOnlySpan<byte> payload, ReadOnlySpan<byte> key, ReadOnlySpan<byte> associatedData = default)
     {
         ValidateKey(key);
 
@@ -62,7 +62,12 @@ internal static class VaultCrypto
         try
         {
             using var gcm = new AesGcm(key, TagSize);
-            gcm.Decrypt(nonce, ciphertext, tag, plaintext);
+            gcm.Decrypt(nonce, ciphertext, tag, plaintext, associatedData);
+        }
+        catch (CryptographicException) when (!associatedData.IsEmpty)
+        {
+            // Legacy payloads written before file-id AAD binding.
+            return Decrypt(payload, key);
         }
         catch (CryptographicException ex)
         {

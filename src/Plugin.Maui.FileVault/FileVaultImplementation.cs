@@ -18,6 +18,7 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
     ManifestDocument? _manifest;
     DateTimeOffset _lastAutoPurge = DateTimeOffset.MinValue;
     bool _disposed;
+    bool _explicitlyLocked;
 
     public FileVaultImplementation(
         FileVaultOptions options,
@@ -56,12 +57,23 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
         try
         {
             ThrowIfDisposed();
+            var lockedWhenStarted = _explicitlyLocked;
             if (IsUnlocked)
             {
+                _explicitlyLocked = false;
                 return;
             }
 
             await UnlockUnlockedHeldAsync(passphrase, cancellationToken).ConfigureAwait(false);
+            if (_explicitlyLocked && !lockedWhenStarted)
+            {
+                ClearKey();
+                _manifest = null;
+                State = VaultState.Locked;
+                return;
+            }
+
+            _explicitlyLocked = false;
             purged = AutoPurgeIfDue(force: true);
             becameUnlocked = true;
         }
@@ -94,6 +106,7 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
         try
         {
             ThrowIfDisposed();
+            _explicitlyLocked = true;
             ClearKey();
             _manifest = null;
             State = VaultState.Locked;
@@ -144,7 +157,7 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
             var entry = RequireEntry(logical);
             RemoveIfExpired(entry, delete: true);
             var payload = await File.ReadAllBytesAsync(PhysicalPath(entry.Id), cancellationToken).ConfigureAwait(false);
-            var plaintext = VaultCrypto.Decrypt(payload, _masterKey!);
+            var plaintext = VaultCrypto.Decrypt(payload, _masterKey!, System.Text.Encoding.UTF8.GetBytes(entry.Id));
             entry.AccessedAt = _clock.UtcNow;
             SaveManifest();
             return plaintext;
@@ -439,6 +452,8 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
             return;
         }
 
+        _explicitlyLocked = true;
+
         if (!_gate.Wait(TimeSpan.FromSeconds(2)))
         {
             return;
@@ -447,6 +462,7 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
         try
         {
             ThrowIfDisposed();
+            _explicitlyLocked = true;
             ClearKey();
             _manifest = null;
             State = VaultState.Locked;
@@ -494,7 +510,7 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
             var now = _clock.UtcNow;
             var existing = FindEntry(logical);
             var id = existing?.Id ?? Guid.NewGuid().ToString("N");
-            var ciphertext = VaultCrypto.Encrypt(plaintext, _masterKey!);
+            var ciphertext = VaultCrypto.Encrypt(plaintext, _masterKey!, System.Text.Encoding.UTF8.GetBytes(id));
 
             evicted.AddRange(EnsureQuota(ciphertext.LongLength, existing, id));
 
@@ -553,6 +569,11 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
     async Task EnsureReadyAsync(CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
+        if (_explicitlyLocked)
+        {
+            throw new FileVaultException(FileVaultError.Locked, "Unlock the vault before using it.");
+        }
+
         if (IsUnlocked)
         {
             return;
@@ -635,7 +656,7 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
         try
         {
             var payload = File.ReadAllBytes(ManifestPath);
-            var json = VaultCrypto.Decrypt(payload, _masterKey!);
+            var json = VaultCrypto.Decrypt(payload, _masterKey!, "manifest"u8);
             _manifest = JsonSerializer.Deserialize(json, ManifestJsonContext.Default.ManifestDocument)
                 ?? new ManifestDocument();
         }
@@ -665,7 +686,7 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
     void SaveManifest()
     {
         var json = JsonSerializer.SerializeToUtf8Bytes(Manifest, ManifestJsonContext.Default.ManifestDocument);
-        var payload = VaultCrypto.Encrypt(json, _masterKey!);
+        var payload = VaultCrypto.Encrypt(json, _masterKey!, "manifest"u8);
         var temp = ManifestPath + ".tmp";
         File.WriteAllBytes(temp, payload);
         Protect(temp);
@@ -838,7 +859,7 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
         }
         finally
         {
-            ArrayPool<byte>.Shared.Return(rented);
+            ArrayPool<byte>.Shared.Return(rented, clearArray: true);
         }
     }
 
