@@ -2,10 +2,10 @@
 
 Secure local files for .NET MAUI: AES-256-GCM encryption, platform-protected keys, expiration, purge, lock/unlock, and vault lifecycle management.
 
-Repository: https://github.com/NiladriPadhy/Plugin.Maui.FileVault
+Repository: https://github.com/nuvyntralabs/Plugin.Maui.FileVault
 NuGet: https://www.nuget.org/packages/Plugin.Maui.FileVault
 Paper: https://niladripadhy.vercel.app/opensource/plugin-maui-file-vault
-Catalog: https://github.com/NiladriPadhy/MauiEssentials
+Catalog: https://github.com/nuvyntralabs/MauiEssentials
 License: MIT
 
 ## Supported versions
@@ -33,9 +33,9 @@ Registration: `UseFileVault` — see README.md.
 
 ## Documentation
 
-https://github.com/NiladriPadhy/Plugin.Maui.FileVault
-https://github.com/NiladriPadhy/Plugin.Maui.FileVault#readme
+https://github.com/nuvyntralabs/Plugin.Maui.FileVault
+https://github.com/nuvyntralabs/Plugin.Maui.FileVault#readme
 
 ## Source
 
-https://github.com/NiladriPadhy/Plugin.Maui.FileVault
+https://github.com/nuvyntralabs/Plugin.Maui.FileVault
