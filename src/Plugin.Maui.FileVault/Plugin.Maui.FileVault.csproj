@@ -27,8 +27,8 @@
     <PackageProjectUrl>https://nuvyntralabs.github.io/packages/plugin-maui-file-vault/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/nuvyntralabs/Plugin.Maui.FileVault</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Version>1.0.7</Version>
-    <PackageReleaseNotes>Point PackageProjectUrl at the Nuvyntra Labs package page.</PackageReleaseNotes>
+    <Version>1.0.8</Version>
+    <PackageReleaseNotes>Always clear the in-memory key on background lock. Add GetStatisticsAsync, RootDirectory confinement, and OnProtectionFailed.</PackageReleaseNotes>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>

@@ -136,8 +136,16 @@ public interface IFileVault
 
     /// <summary>
     /// Returns vault totals. The vault must be unlocked.
+    /// Waits up to 5 seconds for an in-flight operation; prefer
+    /// <see cref="GetStatisticsAsync"/> from UI or async code.
     /// </summary>
     VaultStatistics GetStatistics();
+
+    /// <summary>
+    /// Returns vault totals without blocking the caller on a sync semaphore wait.
+    /// The vault must be unlocked.
+    /// </summary>
+    Task<VaultStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Called when the app returns to the foreground. Purges expired files when configured.

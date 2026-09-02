@@ -135,5 +135,27 @@ public sealed class LifecycleTests
         vault.NotifyBackground();
 
         Assert.Equal(VaultState.Locked, vault.State);
+        Assert.False(vault.IsUnlocked);
+    }
+
+    [Fact]
+    public async Task GetStatisticsAsync_ReturnsCounts()
+    {
+        using var vault = VaultHarness.Create();
+        await vault.UnlockAsync();
+        await vault.WriteTextAsync("a.txt", "one");
+        await vault.WriteTextAsync("b.txt", "two");
+
+        var stats = await vault.GetStatisticsAsync();
+
+        Assert.Equal(2, stats.FileCount);
+        Assert.Equal(vault.GetStatistics().FileCount, stats.FileCount);
+    }
+
+    [Fact]
+    public void RootDirectory_RejectsTraversalVaultName()
+    {
+        Assert.Throws<FileVaultException>(() =>
+            VaultRoot.CombineOverride(Path.GetTempPath(), "../escape"));
     }
 }

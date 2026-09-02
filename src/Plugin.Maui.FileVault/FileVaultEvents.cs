@@ -29,4 +29,9 @@ public sealed class FileVaultEvents
     /// Invoked after the vault becomes ready for file operations.
     /// </summary>
     public Action? OnUnlocked { get; set; }
+
+    /// <summary>
+    /// Invoked when iOS Data Protection or backup exclusion fails. Encryption still applies.
+    /// </summary>
+    public Action<string, Exception>? OnProtectionFailed { get; set; }
 }

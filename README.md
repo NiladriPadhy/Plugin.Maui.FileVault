@@ -12,7 +12,8 @@ The package stores app-private files as AES-256-GCM ciphertext, keeps the master
 | **Key protection** | Master key in iOS Keychain / Android Keystore via `SecureStorage` |
 | **Passphrase** | Optional PBKDF2-SHA256 wrap so the key never sits in `SecureStorage` |
 | **Platform files** | iOS `NSFileProtectionComplete` + backup exclusion; Android app-private / no-backup dir |
-| **Lifecycle** | TTL, idle timeout, purge on resume, lock on background, secure delete, quota eviction |
+| **Lifecycle** | TTL, idle timeout, purge on resume, lock on background (always clears the in-memory key), secure delete, quota eviction |
+| **Statistics** | `GetStatisticsAsync` for file count and bytes; `GetStatistics` times out after 5s |
 
 ## Install
 
@@ -25,6 +26,7 @@ dotnet add package Plugin.Maui.FileVault
 ## Quick start
 
 ```csharp
+using System.Diagnostics;
 using Plugin.Maui.FileVault;
 
 public static class MauiProgram
@@ -39,6 +41,8 @@ public static class MauiProgram
                 options.DefaultTimeToLive = TimeSpan.FromDays(30);
                 options.LockOnBackground = true;
                 options.ExcludeFromBackup = true;
+                options.Events.OnProtectionFailed = (path, ex) =>
+                    Debug.WriteLine($"platform protection failed for {path}: {ex.Message}");
             });
 
         return builder.Build();
@@ -59,6 +63,7 @@ await vault.WriteTextAsync("notes/pin.txt", "1234", new VaultWriteOptions
 
 var pin = await vault.ReadTextAsync("notes/pin.txt");
 var files = await vault.ListAsync("notes");
+var stats = await vault.GetStatisticsAsync();
 ```
 
 Device-key vaults unlock automatically on first use. Passphrase vaults stay locked until `UnlockAsync`.
@@ -104,12 +109,18 @@ Pinned files are skipped during eviction. `VaultEvictionPolicy.None` fails the w
 `UseFileVault` wires platform resume/pause:
 
 - **Resume** — purge expired and idle files
-- **Background** — lock the vault when `LockOnBackground` is `true`
+- **Background** — lock the vault when `LockOnBackground` is `true`. The in-memory master key is always cleared, including when an in-flight write holds the gate longer than the wait timeout.
 
 ```csharp
 vault.NotifyForeground();
 vault.NotifyBackground();
 ```
+
+`GetStatistics()` times out after 5 seconds if a write holds the gate; prefer `GetStatisticsAsync` from UI or async code.
+
+Set `RootDirectory` to store the vault under a host-chosen folder. The resolved path must stay inside that folder (`VaultName` cannot traverse with `..`).
+
+`Events.OnProtectionFailed` reports iOS Data Protection or backup-exclusion failures. Files are still encrypted.
 
 `DestroyAsync` securely deletes every vault file, the manifest, and the stored key.
 
@@ -134,7 +145,7 @@ The package targets `net10.0`, `net10.0-android`, and `net10.0-ios`.
 dotnet pack src/Plugin.Maui.FileVault/Plugin.Maui.FileVault.csproj -c Release -o artifacts
 ```
 
-The `.nupkg` is written to `artifacts/Plugin.Maui.FileVault.1.0.0.nupkg`.
+The `.nupkg` is written to `artifacts/Plugin.Maui.FileVault.1.0.8.nupkg`.
 
 ## License
 

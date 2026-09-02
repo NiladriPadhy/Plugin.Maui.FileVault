@@ -410,29 +410,53 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
 
     public VaultStatistics GetStatistics()
     {
-        _gate.Wait();
+        if (!_gate.Wait(TimeSpan.FromSeconds(5)))
+        {
+            throw new FileVaultException(
+                FileVaultError.IoFailure,
+                "Timed out waiting to read vault statistics. Use GetStatisticsAsync from async code.");
+        }
+
         try
         {
-            if (!IsUnlocked || _manifest is null)
-            {
-                throw new FileVaultException(FileVaultError.Locked, "Unlock the vault before reading statistics.");
-            }
-
-            var files = _manifest.Files;
-            return new VaultStatistics
-            {
-                FileCount = files.Count,
-                PlaintextBytes = files.Sum(f => f.Size),
-                CiphertextBytes = files.Sum(f => f.CipherSize),
-                ExpiredCount = files.Count(IsExpired),
-                OldestCreatedAt = files.Count == 0 ? null : files.Min(f => f.CreatedAt),
-                NewestModifiedAt = files.Count == 0 ? null : files.Max(f => f.ModifiedAt)
-            };
+            return ReadStatisticsUnlocked();
         }
         finally
         {
             _gate.Release();
         }
+    }
+
+    public async Task<VaultStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return ReadStatisticsUnlocked();
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    VaultStatistics ReadStatisticsUnlocked()
+    {
+        if (!IsUnlocked || _manifest is null)
+        {
+            throw new FileVaultException(FileVaultError.Locked, "Unlock the vault before reading statistics.");
+        }
+
+        var files = _manifest.Files;
+        return new VaultStatistics
+        {
+            FileCount = files.Count,
+            PlaintextBytes = files.Sum(f => f.Size),
+            CiphertextBytes = files.Sum(f => f.CipherSize),
+            ExpiredCount = files.Count(IsExpired),
+            OldestCreatedAt = files.Count == 0 ? null : files.Min(f => f.CreatedAt),
+            NewestModifiedAt = files.Count == 0 ? null : files.Max(f => f.ModifiedAt)
+        };
     }
 
     public void NotifyForeground()
@@ -454,24 +478,62 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
 
         _explicitlyLocked = true;
 
-        if (!_gate.Wait(TimeSpan.FromSeconds(2)))
+        if (_gate.Wait(TimeSpan.FromSeconds(2)))
+        {
+            try
+            {
+                ApplyBackgroundLock();
+            }
+            finally
+            {
+                _gate.Release();
+            }
+
+            RaiseLocked();
+            return;
+        }
+
+        // Never leave the master key in memory after backgrounding, even if a write holds the gate.
+        ApplyBackgroundLock();
+        _ = FinishBackgroundLockAsync();
+        RaiseLocked();
+    }
+
+    void ApplyBackgroundLock()
+    {
+        if (_disposed)
         {
             return;
         }
 
+        _explicitlyLocked = true;
+        ClearKey();
+        _manifest = null;
+        State = VaultState.Locked;
+    }
+
+    async Task FinishBackgroundLockAsync()
+    {
         try
         {
-            ThrowIfDisposed();
-            _explicitlyLocked = true;
-            ClearKey();
-            _manifest = null;
-            State = VaultState.Locked;
+            await _gate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                ApplyBackgroundLock();
+            }
+            finally
+            {
+                _gate.Release();
+            }
         }
-        finally
+        catch (ObjectDisposedException)
         {
-            _gate.Release();
+            // The vault was disposed while a deferred lock was queued.
         }
+    }
 
+    void RaiseLocked()
+    {
         _options.Events.OnLocked?.Invoke();
         Locked?.Invoke(this, EventArgs.Empty);
     }
@@ -901,9 +963,9 @@ sealed class FileVaultImplementation : IFileVault, IDisposable
                 _storage.ExcludeFromBackup(path);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Platform protection is best-effort on top of encryption.
+            _options.Events.OnProtectionFailed?.Invoke(path, ex);
         }
     }
 

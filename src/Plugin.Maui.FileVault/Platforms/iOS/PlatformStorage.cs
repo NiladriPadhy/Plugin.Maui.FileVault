@@ -9,7 +9,7 @@ sealed class PlatformStorage : IPlatformStorage
     {
         if (!string.IsNullOrWhiteSpace(overrideRoot))
         {
-            var custom = Path.Combine(overrideRoot, vaultName);
+            var custom = VaultRoot.CombineOverride(overrideRoot, vaultName);
             Directory.CreateDirectory(custom);
             return custom;
         }
